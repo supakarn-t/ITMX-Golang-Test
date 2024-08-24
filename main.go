@@ -157,4 +157,24 @@ func UpdateCustomer(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 }
 
 func DeleteCustomer(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/customers/")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	result := db.Delete(&Customer{}, id)
+	if result.Error != nil || result.RowsAffected == 0 {
+		http.Error(w, fmt.Sprintf("Not found customer with id %d", id), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err = json.NewEncoder(w).Encode(fmt.Sprintf("Customer with id %d deleted", id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
