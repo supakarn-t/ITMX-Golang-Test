@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -89,6 +92,27 @@ func CreateCustomer(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 }
 
 func GetCustomer(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/customers/")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	var customer Customer
+	err = db.First(&customer, id).Error
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Not found customer with id %d", id), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err = json.NewEncoder(w).Encode(customer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func UpdateCustomer(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
